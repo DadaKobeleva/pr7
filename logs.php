@@ -41,9 +41,7 @@
 			<div class="content">
 				<input type="button" class="button" value="Выйти" onclick="logout()"/>
 				
-				<div class="name">Административная панель</div>
-			
-				Административная панель служит для создания, редактирования и удаления записей на сайте.
+				<div class="name">Журнал событий</div>
 			
 				<div class="footer">
 					© КГАПОУ "Авиатехникум", 2020
@@ -54,23 +52,7 @@
 		</div>
 		
 		<script>
-			function logout() {
-				$.ajax({
-					url         : 'ajax/logout.php',
-					type        : 'POST', // важно!
-					data        : null,
-					cache       : false,
-					dataType    : 'html',
-					processData : false,
-					contentType : false, 
-					success: function (_data) {
-						location.reload();
-					},
-					error: function( ){
-						console.log('Системная ошибка!');
-					}
-				});
-			}
+			
 		</script>
 	</body>
 </html>
