@@ -15,6 +15,24 @@
 	
 	if($id != -1) {
 		$_SESSION['user'] = $id;
+
+		$Ip = $_SESSION["REMOTE_ADDR"];
+		$DateStart = date(format: "Y-m-d H:i:s");
+
+		# Пользователь авторизовался
+		# 1. Создать сессию
+		$Sql = "INSERT INTO `session`(`IdUser`, `Ip`, `DateStart`, `DateNow`) VALUES ('{$id}', '{$Ip}', '{$DateStart}' , '{$DateStart}')";
+		$mysqli->query(query: $Sql);
+
+		$Sql = "SELECT `Id` FROM `session` WHERE `DateStart` = '{$DateStart}';";
+		$Query = $mysqli->query(query: $Sql);
+		$Read = $Query->fetch_assoc();
+		$_SESSION["IdSession"] = $Read["Id"];
+
+		# 2. Записать событие авторизации
+		$Sql = "INSERT INTO `logs`(`Ip`, `IdUser`, `Date`, `TimeOnline`, `Event`) VALUES ('{$Ip}','{$id}','{$DateStart}','00:00:00','Пользователь ($login) авторизовался.')";
+		$mysqli->query(query: $Sql);
 	}
-	echo md5(md5($id));
+	
+	echo md5(string: md5(string: $id));
 ?>
