@@ -15,6 +15,35 @@
 	}
 
 	include("./settings/session.php");
+	
+	// Получаем параметры фильтрации
+	$filter_type = isset($_GET['type']) ? $_GET['type'] : 'all';
+	$filter_date_from = isset($_GET['date_from']) ? $_GET['date_from'] : '';
+	$filter_date_to = isset($_GET['date_to']) ? $_GET['date_to'] : '';
+	$filter_search = isset($_GET['search']) ? $_GET['search'] : '';
+	
+	// Формируем SQL с фильтрами
+	$sql = "SELECT * FROM `logs` WHERE 1=1";
+	
+	if ($filter_type != 'all') {
+		$sql .= " AND `Event` LIKE '%" . $mysqli->real_escape_string($filter_type) . "%'";
+	}
+	
+	if (!empty($filter_date_from)) {
+		$sql .= " AND DATE(`Date`) >= '" . $mysqli->real_escape_string($filter_date_from) . "'";
+	}
+	
+	if (!empty($filter_date_to)) {
+		$sql .= " AND DATE(`Date`) <= '" . $mysqli->real_escape_string($filter_date_to) . "'";
+	}
+	
+	if (!empty($filter_search)) {
+		$sql .= " AND (`Event` LIKE '%" . $mysqli->real_escape_string($filter_search) . "%' 
+		              OR `Ip` LIKE '%" . $mysqli->real_escape_string($filter_search) . "%')";
+	}
+	
+	$sql .= " ORDER BY `Date`";
+	$Query = $mysqli->query($sql);
 ?>
 <!DOCTYPE HTML>
 <html>
@@ -33,6 +62,55 @@
 				text-align: center;
 				padding: 10px;
 			}
+			.filters {
+				margin-bottom: 20px;
+				padding: 15px;
+				background: #f5f5f5;
+				border-radius: 5px;
+			}
+			.filter-row {
+				display: flex;
+				gap: 10px;
+				margin-bottom: 10px;
+				flex-wrap: wrap;
+			}
+			.filter-group {
+				display: flex;
+				flex-direction: column;
+			}
+			.filter-label {
+				font-size: 12px;
+				color: #666;
+				margin-bottom: 3px;
+			}
+			.filter-select, .filter-input {
+				padding: 5px;
+				border: 1px solid #ccc;
+				border-radius: 3px;
+			}
+			.filter-button {
+				padding: 5px 15px;
+				background: #0066cc;
+				color: white;
+				border: none;
+				border-radius: 3px;
+				cursor: pointer;
+				height: 29px;
+				align-self: flex-end;
+			}
+			.filter-button:hover {
+				background: #0055aa;
+			}
+			.status-online {
+				color: green;
+				font-weight: bold;
+			}
+			.no-data {
+				text-align: center;
+				padding: 20px;
+				color: #666;
+				font-style: italic;
+			}
 		</style>
 	</head>
 	<body>
@@ -50,6 +128,43 @@
 		<div class="main">
 			<div class="content">
 				<div class="name">Журнал событий</div>
+				
+				<!-- Форма фильтрации -->
+				<div class="filters">
+					<form method="GET" action="">
+						<div class="filter-row">
+							<div class="filter-group">
+								<div class="filter-label">Тип события</div>
+								<select class="filter-select" name="type">
+									<option value="all" <?php echo $filter_type == 'all' ? 'selected' : ''; ?>>Все события</option>
+									<option value="авторизовался" <?php echo $filter_type == 'авторизовался' ? 'selected' : ''; ?>>Авторизация</option>
+									<option value="зарегистрировался" <?php echo $filter_type == 'зарегистрировался' ? 'selected' : ''; ?>>Регистрация</option>
+									<option value="сброшен" <?php echo $filter_type == 'сброшен' ? 'selected' : ''; ?>>Восстановление пароля</option>
+									<option value="комментарий" <?php echo $filter_type == 'комментарий' ? 'selected' : ''; ?>>Комментарии</option>
+									<option value="покинул" <?php echo $filter_type == 'покинул' ? 'selected' : ''; ?>>Выход</option>
+								</select>
+							</div>
+							
+							<div class="filter-group">
+								<div class="filter-label">Дата с</div>
+								<input type="date" class="filter-input" name="date_from" value="<?php echo $filter_date_from; ?>">
+							</div>
+							
+							<div class="filter-group">
+								<div class="filter-label">Дата по</div>
+								<input type="date" class="filter-input" name="date_to" value="<?php echo $filter_date_to; ?>">
+							</div>
+							
+							<div class="filter-group">
+								<div class="filter-label">Поиск</div>
+								<input type="text" class="filter-input" name="search" value="<?php echo htmlspecialchars($filter_search); ?>" placeholder="Текст или IP">
+							</div>
+							
+							<button type="submit" class="filter-button">Применить</button>
+							<button type="button" class="filter-button" onclick="resetFilters()">Сбросить</button>
+						</div>
+					</form>
+				</div>
 
 				<table border="1">
 					<tr>
@@ -59,6 +174,45 @@
 						<td style="width: 165px;">Статус</td>
 						<td>Произошедшее событие</td>
 					</tr>
+					
+					<?php
+					if ($Query->num_rows > 0) {
+						while($Read = $Query->fetch_assoc()) {
+							$Status = "";
+							$SqlSession = "SELECT * FROM `session` WHERE `IdUser` = {$Read["IdUser"]} ORDER BY `DateStart` DESC";
+							$QuerySession = $mysqli->query($SqlSession);
+							
+							if ($QuerySession->num_rows > 0) {
+								$ReadSession = $QuerySession->fetch_assoc();
+								$TimeEnd = strtotime($ReadSession["DateNow"]) + 5*60;
+								$TimeNow = time();
+
+								if($TimeEnd > $TimeNow) {
+									$Status = "online";
+									$status_class = "status-online";
+								} else {
+									$TimeEnd = strtotime($ReadSession["DateNow"]);
+									$TimeDelta = round(($TimeNow - $TimeEnd)/60);
+									$Status = "Был в сети: {$TimeDelta} минут назад";
+									$status_class = "";
+								}
+							} else {
+								$Status = "Никогда не был онлайн";
+								$status_class = "";
+							}
+							
+							echo "<tr>";
+							echo "<td>{$Read["Date"]}</td>";
+							echo "<td>{$Read["Ip"]}</td>";
+							echo "<td>{$Read["TimeOnline"]}</td>";
+							echo "<td class='{$status_class}'>{$Status}</td>";
+							echo "<td style='text-align: left'>{$Read["Event"]}</td>";
+							echo "</tr>";
+						}
+					} else {
+						echo "<tr><td colspan='5' class='no-data'>События не найдены</td></tr>";
+					}
+					?>
 				</table>
 			
 				<div class="footer">
@@ -70,44 +224,14 @@
 		</div>
 		
 		<script>
-			GetEvents();
-			function GetEvents() {
-				// AJAX запрос
-				$.ajax({
-					url         : 'ajax/events/get.php',
-					type        : 'POST', // важно!
-					data        : null,
-					cache       : false,
-					dataType    : 'html',
-					processData : false,
-					contentType : false, 
-					// функция успешного ответа сервера
-					success: GetEventsAjax,
-					// функция ошибки
-					error: function( ){
-						console.log('Системная ошибка!');
-					}
-				});
+			function resetFilters() {
+				window.location.href = 'logs.php';
 			}
-
-			function GetEventsAjax(_data) {
-				console.log(_data);
-
-				let $Table = $("table > tbody");
-				let Events = JSON.parse(_data);
-
-				Events.forEach((Event) => {
-					$Table.append(`
-						<tr>
-							<td>${Event["Date"]}</td>
-							<td>${Event["Ip"]}</td>
-							<td>${Event["TimeOnline"]}</td>
-							<td>${Event["Status"]}</td>
-							<td style="text-align: left">${Event["Event"]}</td>
-						</tr>
-					`);
-				})
-			}
+			
+			// Автообновление каждые 60 секунд (опционально)
+			// setTimeout(function() {
+			//     window.location.reload();
+			// }, 60000);
 		</script>
 	</body>
 </html>
