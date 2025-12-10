@@ -1,6 +1,7 @@
-<?
+<?php
     session_start();
     include("../settings/connect_datebase.php");
+    include("../settings/log_functions.php");
 
     $IdUser = $_SESSION['user'];
     $Message = $_POST["Message"];
@@ -26,4 +27,7 @@
 
     $Sql = "INSERT INTO `logs`(`Ip`, `IdUser`, `Date`, `TimeOnline`, `Event`) VALUES ('{$Ip}','{$IdUser}','{$Date}','{$TimeDelta}','Пользователь {$Login} оставил комментарий к записи [Id: {$IdPost}]: {$Message}')";
     $mysqli->query(query: $Sql);
+    
+    // Запись в файл log.txt
+    writeToLog(message: "[COMMENT] Пользователь '{$Login}' (ID: {$IdUser}) оставил комментарий к записи [Id: {$IdPost}]: {$Message}");
 ?>
