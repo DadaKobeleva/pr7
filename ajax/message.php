@@ -7,9 +7,9 @@
     $IdPost = $_POST["IdPost"];
     $IdSession = $_SESSION["IdSession"];
 
-    $mysqli->query(query: "INSERT INTO `comments`(`IdUser`, `IdPost`, `Messages`) VALUES ('{$IdUser}', '{$IdPost}, '{$Message}');");
+    $mysqli->query(query: "INSERT INTO `comments`(`IdUser`, `IdPost`, `Messages`) VALUES ('{$IdUser}', '{$IdPost}', '{$Message}');");
 
-    Sql = "SELECT `session`.*, `users`.`login` ".
+    $Sql = "SELECT `session`.*, `users`.`login` ".
         "FROM `session` `session` ".
         "JOIN `users` `users` ON `users`.`id` = `session`.`IdUser`". 
         "WHERE `session`.`Id` = {$IdSession}";
@@ -25,5 +25,5 @@
     $Login = $Read["login"];
 
     $Sql = "INSERT INTO `logs`(`Ip`, `IdUser`, `Date`, `TimeOnline`, `Event`) VALUES ('{$Ip}','{$IdUser}','{$Date}','{$TimeDelta}','Пользователь {$Login} оставил комментарий к записи [Id: {$IdPost}]: {$Message}')";
-    $mysqli->query($Sql);
+    $mysqli->query(query: $Sql);
 ?>
