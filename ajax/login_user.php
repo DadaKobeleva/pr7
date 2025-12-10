@@ -16,7 +16,7 @@
 	if($id != -1) {
 		$_SESSION['user'] = $id;
 
-		$Ip = $_SESSION["REMOTE_ADDR"];
+		$Ip = $_SERVER["REMOTE_ADDR"];
 		$DateStart = date(format: "Y-m-d H:i:s");
 
 		# Пользователь авторизовался
