@@ -16,13 +16,11 @@
 
 	include("./settings/session.php");
 	
-	// Получаем параметры фильтрации
 	$filter_type = isset($_GET['type']) ? $_GET['type'] : 'all';
 	$filter_date_from = isset($_GET['date_from']) ? $_GET['date_from'] : '';
 	$filter_date_to = isset($_GET['date_to']) ? $_GET['date_to'] : '';
 	$filter_search = isset($_GET['search']) ? $_GET['search'] : '';
 	
-	// Формируем SQL с фильтрами
 	$sql = "SELECT * FROM `logs` WHERE 1=1";
 	
 	if ($filter_type != 'all') {
@@ -83,7 +81,6 @@
 	$hour_labels = [];
 	$hour_data = [];
 	
-	// Заполняем все часы от 0 до 23
 	for ($i = 0; $i < 24; $i++) {
 		$hour_labels[] = sprintf("%02d:00", $i);
 		$hour_data[$i] = 0;
@@ -165,10 +162,6 @@
 			}
 			.filter-button:hover {
 				background: #0055aa;
-			}
-			.status-online {
-				color: green;
-				font-weight: bold;
 			}
 			.no-data {
 				text-align: center;
@@ -292,23 +285,18 @@
 
 								if($TimeEnd > $TimeNow) {
 									$Status = "online";
-									$status_class = "status-online";
 								} else {
 									$TimeEnd = strtotime($ReadSession["DateNow"]);
 									$TimeDelta = round(($TimeNow - $TimeEnd)/60);
 									$Status = "Был в сети: {$TimeDelta} минут назад";
 									$status_class = "";
 								}
-							} else {
-								$Status = "Никогда не был онлайн";
-								$status_class = "";
 							}
-							
 							echo "<tr>";
 							echo "<td>{$Read["Date"]}</td>";
 							echo "<td>{$Read["Ip"]}</td>";
 							echo "<td>{$Read["TimeOnline"]}</td>";
-							echo "<td class='{$status_class}'>{$Status}</td>";
+							echo "<td>{$Status}</td>";
 							echo "<td style='text-align: left'>{$Read["Event"]}</td>";
 							echo "</tr>";
 						}
